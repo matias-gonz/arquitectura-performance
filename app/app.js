@@ -22,4 +22,4 @@ app.get('/space_news', async (req, res) => {
   res.status(200).send(titles);
 });
 
-app.listen(3000, () => console.log("Listening at 5000"))
+app.listen(3000, () => console.log("Listening at 3000"));
