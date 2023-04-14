@@ -3,10 +3,6 @@ const axios = require('axios');
 
 const app = express();
 
-process.on('SIGTERM', async () => {
-  await redisClient.quit();
-});
-
 app.get('/ping', (req, res) => {
   console.log('Request received at /ping');
   res.status(200).send('Pong!');
