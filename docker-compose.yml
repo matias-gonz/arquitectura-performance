@@ -2,7 +2,7 @@ version: '2'
 
 services:
     node:
-        build: ./app
+        build: .
 
     nginx:
         image: nginx:1.23.4

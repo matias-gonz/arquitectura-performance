@@ -22,4 +22,12 @@ app.get('/space_news', async (req, res) => {
   res.status(200).send(titles);
 });
 
+app.get('/fact', async (req, res) => {
+  console.log('Request received at /fact');
+  const response = await axios.get('https://uselessfacts.jsph.pl/api/v2/facts/random');
+  let fact = response.data.text;
+  console.log(fact);
+  res.status(200).send(fact);
+});
+
 app.listen(3000, () => console.log("Listening at 3000"));
