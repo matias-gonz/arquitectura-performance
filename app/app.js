@@ -2,8 +2,22 @@ const express = require('express');
 const axios = require('axios');
 const { XMLParser } = require('fast-xml-parser');
 const { decode } = require('metar-decoder');
+const { createClient } = require('redis');
 
 const app = express();
+const redisClient = createClient({
+  url: 'redis://redis:6379'
+});
+
+(async () => {
+  await redisClient.connect();
+  console.log('Connected to Redis');
+})();
+
+process.on('SIGTERM', async () => {
+  await redisClient.quit();
+  console.log('Disconnected from Redis');
+});
 
 app.get('/ping', (req, res) => {
   console.log('Request received at /ping');
@@ -12,11 +26,23 @@ app.get('/ping', (req, res) => {
 
 app.get('/space_news', async (req, res) => {
   console.log('Request received at /space_news');
-  let limit = 5;
-  const response = await axios.get('https://api.spaceflightnewsapi.net/v4/articles/?limit=' + limit);
-  let articles = response.data.results;
-  let titles = articles.map(article => article.title);
-  console.log(titles);
+  let titles;
+  const titlesString = await redisClient.get('space_news');
+
+  if(titlesString) {
+    titles = JSON.parse(titlesString);
+  } else {
+    let limit = 5;
+    titles = [];
+    const response = await axios.get('https://api.spaceflightnewsapi.net/v4/articles/?limit=' + limit);
+
+    response.data.results.forEach((article) => {
+      titles.push(article.title);
+    });
+
+    await redisClient.set('space_news', JSON.stringify(titles), { EX: 5 });
+  }
+
   res.status(200).send(titles);
 });
 
