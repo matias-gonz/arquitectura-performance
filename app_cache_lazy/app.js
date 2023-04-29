@@ -23,7 +23,7 @@ process.on('SIGTERM', async () => {
 
 app.get('/ping', (req, res) => {
   const random = 1;
-  console.log('Request received at /ping');
+  console.log('Request received at /ping with cache');
   res.status(200).send(`[${random}] pong!\n`);
 });
 
