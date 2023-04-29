@@ -3,14 +3,14 @@ version: '2'
 services:
     node:
         build: .
-        # links:
-        #     - redis
+        links:
+            - redis
         # deploy:
         #     mode: replicated
         #     replicas: 3
 
-    # redis:
-    #     image: redis:7
+    redis:
+        image: redis:7
 
     nginx:
         image: nginx:1.23.4
