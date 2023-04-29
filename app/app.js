@@ -2,46 +2,63 @@ const express = require('express');
 const axios = require('axios');
 const { XMLParser } = require('fast-xml-parser');
 const { decode } = require('metar-decoder');
-const { createClient } = require('redis');
+// const { createClient } = require('redis');
 
 const app = express();
-const redisClient = createClient({
-  url: 'redis://redis:6379'
-});
+// const redisClient = createClient({
+//   url: 'redis://redis:6379'
+// });
 
-(async () => {
-  await redisClient.connect();
-  console.log('Connected to Redis');
-})();
+// const random = Math.round(Math.random() * 100, 1);
 
-process.on('SIGTERM', async () => {
-  await redisClient.quit();
-  console.log('Disconnected from Redis');
-});
+// (async () => {
+//   await redisClient.connect();
+//   console.log('Connected to Redis');
+// })();
+
+// process.on('SIGTERM', async () => {
+//   await redisClient.quit();
+//   console.log('Disconnected from Redis');
+// });
 
 app.get('/ping', (req, res) => {
+  const random = 1;
   console.log('Request received at /ping');
-  res.status(200).send('Pong!');
+  res.status(200).send(`[${random}] pong!\n`);
 });
+
+// app.get('/space_news', async (req, res) => {
+//   console.log('Request received at /space_news');
+//   let titles;
+//   const titlesString = await redisClient.get('space_news');
+
+//   if(titlesString) {
+//     titles = JSON.parse(titlesString);
+//   } else {
+//     let limit = 5;
+//     titles = [];
+//     const response = await axios.get('https://api.spaceflightnewsapi.net/v4/articles/?limit=' + limit);
+
+//     response.data.results.forEach((article) => {
+//       titles.push(article.title);
+//     });
+
+//     await redisClient.set('space_news', JSON.stringify(titles), { EX: 5 });
+//   }
+
+//   res.status(200).send(titles);
+// });
 
 app.get('/space_news', async (req, res) => {
   console.log('Request received at /space_news');
-  let titles;
-  const titlesString = await redisClient.get('space_news');
+  let titles = [];
 
-  if(titlesString) {
-    titles = JSON.parse(titlesString);
-  } else {
-    let limit = 5;
-    titles = [];
-    const response = await axios.get('https://api.spaceflightnewsapi.net/v4/articles/?limit=' + limit);
+  let limit = 5;
+  const response = await axios.get('https://api.spaceflightnewsapi.net/v4/articles/?limit=' + limit);
 
-    response.data.results.forEach((article) => {
-      titles.push(article.title);
-    });
-
-    await redisClient.set('space_news', JSON.stringify(titles), { EX: 5 });
-  }
+  response.data.results.forEach((article) => {
+    titles.push(article.title);
+  });
 
   res.status(200).send(titles);
 });
