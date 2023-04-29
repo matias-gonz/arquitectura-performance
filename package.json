@@ -2,9 +2,9 @@
   "name": "arquitectura-performance",
   "version": "1.0.0",
   "description": "Tests de performance sobre una aplicacion Node",
-  "main": "app/app.js",
+  "main": "app_base/app.js",
   "scripts": {
-    "start": "node app/app.js",
+    "start": "node app_base/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
