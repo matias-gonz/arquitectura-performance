@@ -1,13 +1,15 @@
 const express = require('express');
 const axios = require('axios');
-const { XMLParser } = require('fast-xml-parser');
-const { decode } = require('metar-decoder');
-const { createClient } = require('redis');
+const {XMLParser} = require('fast-xml-parser');
+const {decode} = require('metar-decoder');
+const {createClient} = require('redis');
 
 const app = express();
 const redisClient = createClient({
   url: 'redis://redis:6379'
 });
+
+// const random = Math.round(Math.random() * 100, 1);
 
 (async () => {
   await redisClient.connect();
@@ -20,8 +22,9 @@ process.on('SIGTERM', async () => {
 });
 
 app.get('/ping', (req, res) => {
+  const random = 1;
   console.log('Request received at /ping');
-  res.status(200).send('Pong!');
+  res.status(200).send(`[${random}] pong!\n`);
 });
 
 app.get('/space_news', async (req, res) => {
