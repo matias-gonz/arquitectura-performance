@@ -5,9 +5,9 @@ services:
         build: .
         links:
             - redis
-        # deploy:
-        #     mode: replicated
-        #     replicas: 3
+        deploy:
+            mode: replicated
+            replicas: 3
 
     redis:
         image: redis:7

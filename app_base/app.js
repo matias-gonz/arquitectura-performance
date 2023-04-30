@@ -4,9 +4,10 @@ const { XMLParser } = require('fast-xml-parser');
 const { decode } = require('metar-decoder');
 
 const app = express();
+const random = Math.round(Math.random() * 100, 1);
+
 
 app.get('/ping', (req, res) => {
-  const random = 1;
   console.log('Request received at /ping');
   res.status(200).send(`[${random}] pong!\n`);
 });

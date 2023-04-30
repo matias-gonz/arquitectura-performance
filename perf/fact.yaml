@@ -21,8 +21,10 @@ config:
     - name: Ramp down
       duration: 30
       arrivalRate: 40
-      rampTo: 0
-    
+      rampTo: 5
+    - name: Stop
+      duration: 30
+      arrivalRate: 1
 
 scenarios:
   - name: Fact (/fact)
