@@ -70,10 +70,72 @@ A su vez, como se observará en el siguiente escenario, se debe tener en cuenta 
 
 *Conclusión:* A diferencia del endpoint /space_news, si bien realiza requests a una API externa, con un máximo de 40 requests por segundo, en ningún momento deja de responder con solicitudes correctas. En este caso, se puede observar un uso máximo de CPU de 24.7%, con un tiempo de respuesta máximo de 865 ms.
 
-* **_Gráfico escenario 3 realizando request a /metar_**
+* **_Gráfico escenario 1 realizando request a /metar_**
+
+Station: BAEZ
+![](https://i.imgur.com/GyQkhlm.png)
+![](https://i.imgur.com/g2gw1pa.png)
+
+*Conclusión:* De la misma manera, se puede observar que en ningún momento deja de responder con solicitudes correctas. En este caso, se puede observar un uso máximo de CPU de 37.2%, ya que requiere todo el post-procesamiento de la respuesta de _aviationweather_, pero a su vez, curiosamente el tiempo de respuesta máximo es de 295 ms, lo cual en comparación a los anteriores fue poco tiempo.
 
 
-*Conclusión:* A diferencia del endpoint /space_news, si bien realiza requests a una API externa, con un máximo de 40 requests por segundo, en ningún momento deja de responder con solicitudes correctas. En este caso, se puede observar un uso máximo de CPU de 24.7%, con un tiempo de respuesta máximo de 865 ms.
+### Táctica 2 - Nodos replicados
+
+Como segunda táctica utilizamos 3 réplicas del servicio HTTP, donde Nginx representa un balanceador de carga. Esto significa que al realizarse distintas request, se dividen mediante las distintas réplicas, en este caso equitativamente ya que ninguna tiene un peso superior.
+
+Para comprobar que efectivamante hay 3 réplicas, el endpoint de _Ping_ devuelve un número random, y al realizar varias requests, se puede observar que ese valor varía entre 3 números distintos:
+```
+❯ curl http://localhost:5555/api/ping
+[49] pong!
+❯ curl http://localhost:5555/api/ping
+[69] pong!
+❯ curl http://localhost:5555/api/ping
+[18] pong!
+```
+
+* **_Gráfico de arquitectura_**
+
+* **_Gráfico escenario 1 realizando request a /ping_**
+![](https://i.imgur.com/Z5rVKC1.png)
+_Recursos utilizados de la réplica 1_:
+![](https://i.imgur.com/qyffV8g.png)
+_Recursos utilizados de la réplica 2_:
+![](https://i.imgur.com/S8fs4Ty.png)
+_Recursos utilizados de la réplica 3_:
+![](https://i.imgur.com/m2hjNap.png)
+
+*Conclusión:* En comparación con la táctica 1, se observa como el consumo de recursos disminuye a una tercera parte en cada nodo (en promedio 1.8%), ya que el consumo se distribuye a cada uno de los 3 nodos.
+
+* **_Gráfico escenario 3 realizando request a /space_news_**
+![](https://i.imgur.com/xxWKieh.png)
+_Recursos utilizados de la réplica 1_:
+![](https://i.imgur.com/2cljqHz.png)
+
+*Conclusión:* Si bien hay 3 réplicas para distribuir las requests, esto no influye en la API externa por lo que al igual que con la táctica 1, sigue "colapsando" y finalmente se reciben muchas requests con timeout. En cuanto al consumo de CPU, el máximo entre las 3 réplicas es de 7.09%.
+
+* **_Gráfico escenario 1 realizando request a /fact_**
+
+_Recursos utilizados de la réplica 1_:
+![](https://i.imgur.com/YaZipZW.png)
+_Recursos utilizados de la réplica 2_:
+![](https://i.imgur.com/vKW2WXf.png)
+_Recursos utilizados de la réplica 3_:
+![](https://i.imgur.com/wIMiawL.png)
+
+*Conclusión:* Se puede observar cómo disminuyó el consumo de CPU a un máximo de un 10.7% entre las tres réplicas, y el tiempo de respuesta sigue en 859 ms.
+
+* **_Gráfico escenario 1 realizando request a /metar_**
+
+_Recursos utilizados de la réplica 1_:
+
+_Recursos utilizados de la réplica 2_:
+![](https://i.imgur.com/6uXpEi1.png)
+_Recursos utilizados de la réplica 3_:
+![](https://i.imgur.com/wIMiawL.png)
+
+*Conclusión:* Se puede observar cómo disminuyó el consumo de CPU a un máximo de un 10.7% entre las tres réplicas, y el tiempo de respuesta sigue en 859 ms.
+
+
 
 **Tácticas**
 
@@ -86,7 +148,7 @@ A su vez, como se observará en el siguiente escenario, se debe tener en cuenta 
 - [ ] Cache active population - rate limiting
 - [ ] Cache lazy population - replicated repositories - rate limiting
 - [ ] Cache active population - replicated repositories - rate limiting
-- [ ] Replicated repositories
+- [x] Replicated repositories
 - [ ] Replicate repositories - rate limiting
 - [ ] Rate limiting
 
