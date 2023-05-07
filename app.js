@@ -3,11 +3,26 @@ const axios = require('axios');
 const { XMLParser } = require('fast-xml-parser');
 const { decode } = require('metar-decoder');
 const StatsD = require('node-statsd');
+const {createClient} = require('redis');
 
 const app = express();
 app.use((req, res, next) => {
   req.startTime = Date.now();
   next();
+});
+
+const redisClient = createClient({
+  url: 'redis://redis:6379'
+});
+
+(async () => {
+  await redisClient.connect();
+  console.log('Connected to Redis');
+})();
+
+process.on('SIGTERM', async () => {
+  await redisClient.quit();
+  console.log('Disconnected from Redis');
 });
 
 const random = Math.round(Math.random() * 100, 1);
@@ -16,7 +31,7 @@ const sendMetric = (metric, value) => {
   if (!isNaN(value)) {
     dogstatsd.timing(`project.${metric}`, value);
   }
-}
+};
 
 const dogstatsd = new StatsD({
   host: 'graphite',
@@ -48,13 +63,43 @@ app.get('/space_news', async (req, res) => {
   sendMetric('space-news', responseTime);
 });
 
+
+const populateFacts = async (facts) => {
+  const AMOUNT_OF_FACTS = 50;
+  if(facts.length > 2*AMOUNT_OF_FACTS){
+    return;
+  }
+
+  let fact_promises = [];
+  for (let i = 0; i < AMOUNT_OF_FACTS; i++) {
+    fact_promises.push(axios.get('https://uselessfacts.jsph.pl/api/v2/facts/random'));
+  }
+
+  let newFacts = await Promise.all(fact_promises);
+  newFacts = newFacts.map((fact) => fact.data.text);
+  facts = facts.concat(newFacts);
+
+  await redisClient.set('useless-facts', JSON.stringify(facts));
+};
+
 app.get('/fact', async (req, res) => {
   console.log('Request received at /fact');
-  const response = await axios.get('https://uselessfacts.jsph.pl/api/v2/facts/random');
+
+  const factsString = await redisClient.get('useless-facts');
+
+  let fact;
+  let facts = [];
+  if (factsString) {
+    const facts = JSON.parse(factsString);
+    fact = facts.pop();
+  } else {
+    fact = await axios.get('https://uselessfacts.jsph.pl/api/v2/facts/random');
+    fact = fact.data.text;
+  }
+  populateFacts(facts);
+
   const responseTimeExt = Date.now() - req.startTime;
   sendMetric('fact-ext', responseTimeExt);
-  let fact = response.data.text;
-
   const responseTime = Date.now() - req.startTime;
   sendMetric('fact', responseTime);
   res.status(200).send(fact);
