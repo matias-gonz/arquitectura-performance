@@ -55,7 +55,12 @@ app.get('/metar', async (req, res) => {
     return res.status(404).send('No data found');
   }
 
-  const metereologic_report = decode(parsed.response.data.METAR.raw_text);
+  let data = parsed.response.data.METAR;
+  if(parsed.response.data.METAR.length > 1){
+    data = parsed.response.data.METAR[0];
+  }
+
+  const metereologic_report = decode(data.raw_text);
   console.log(metereologic_report);
   res.status(200).send(metereologic_report);
 });
