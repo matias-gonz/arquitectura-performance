@@ -9,9 +9,6 @@ services:
             - .:/opt/app/
         environment:
             - CHOKIDAR_USEPOLLING=true
-        deploy:
-            mode: replicated
-            replicas: 3
 
     redis:
         image: redis:7
