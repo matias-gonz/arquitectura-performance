@@ -3,6 +3,7 @@ const axios = require('axios');
 const { XMLParser } = require('fast-xml-parser');
 const { decode } = require('metar-decoder');
 const StatsD = require('node-statsd');
+const { rateLimit } = require('express-rate-limit');
 
 const app = express();
 app.use((req, res, next) => {
@@ -11,6 +12,14 @@ app.use((req, res, next) => {
 });
 
 const random = Math.round(Math.random() * 100, 1);
+
+const limiter = rateLimit({
+	windowMs: 50 * 1000, // 50 seconds
+	max: 200, // Limit each IP to 200 requests per `window` (here, per 50 secs)
+	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
+app.use(limiter);
 
 const sendMetric = (metric, value) => {
   if (!isNaN(value)) {
