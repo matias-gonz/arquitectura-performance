@@ -112,7 +112,6 @@ app.get('/metar', async (req, res) => {
   }
 
   const parser = new XMLParser();
-  console.log('🚀 ~ app.get ~ parser:', response.data);
   const parsed = parser.parse(response.data);
 
   if (parsed.response.data === '') {
