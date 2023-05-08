@@ -4,6 +4,7 @@ const { XMLParser } = require('fast-xml-parser');
 const { decode } = require('metar-decoder');
 const StatsD = require('node-statsd');
 const {createClient} = require('redis');
+const _ = require('underscore');
 
 const app = express();
 app.use((req, res, next) => {
@@ -105,19 +106,12 @@ app.get('/fact', async (req, res) => {
   res.status(200).send(fact);
 });
 
-app.get('/metar', async (req, res) => {
-  console.log('Request received at /metar');
-  let station = req.query.station;
-  console.log('Station: ' + station);
-  const response = await axios.get(`https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&stationString=${station}&hoursBeforeNow=1`);
-  const responseTimeExt = Date.now() - req.startTime;
-  sendMetric('metar-ext', responseTimeExt);
-
+const parseMetar = (metar) => {
   const parser = new XMLParser();
-  const parsed = parser.parse(response.data);
+  const parsed = parser.parse(metar);
 
   if (parsed.response.data === '') {
-    return res.status(404).send('No data found');
+    return null;
   }
 
   let data = parsed.response.data.METAR;
@@ -125,8 +119,55 @@ app.get('/metar', async (req, res) => {
     data = parsed.response.data.METAR[0];
   }
 
-  const metereologic_report = decode(data.raw_text);
-  res.status(200).send(metereologic_report);
+  return decode(data.raw_text);
+};
+
+const METAR_STATIONS = ['SAEZ', 'KJFK', 'LIRE', 'RJTY', 'KLAX', 'KNXF', 'KUKI', 'KITR', 'EFHK', 'EFTU', 'EFOU', 'EGBB', 'EGLC', 'EKYT', 'ENGM', 'EPKK', 'EPWA', 'ESMS', 'ESND', 'ESST', 'LCLK'];
+
+const populateMetar = async () => {
+  const stations = _.sample(METAR_STATIONS, 5);
+
+  let stationPromises = [];
+  stations.forEach((station) => {
+    let promise = axios.get(`https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&stationString=${station}&hoursBeforeNow=1`);
+    stationPromises.push(promise);
+  });
+
+  let metars = await Promise.all(stationPromises);
+  for(let i = 0; i < metars.length; i++){
+    redisClient.set('metar' + stations[i], JSON.stringify(parseMetar(metars[i].data)), {EX: 10});
+  }
+};
+
+app.get('/metar', async (req, res) => {
+  console.log('Request received at /metar');
+  let station = req.query.station;
+  console.log('Station: ' + station);
+
+  let reportString = await redisClient.get('metar' + station);
+
+  let report;
+  if (reportString) {
+    report = JSON.parse(reportString);
+  } else{
+    const response = await axios.get(`https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&stationString=${station}&hoursBeforeNow=1`);
+    const responseTimeExt = Date.now() - req.startTime;
+    sendMetric('metar-ext', responseTimeExt);
+
+    report = parseMetar(response.data);
+    if (report) {
+      redisClient.set('metar' + station, JSON.stringify(report), {EX: 10});
+    }
+
+    populateMetar();
+  }
+
+  if (!report) {
+    return res.status(200).send('No report found');
+  }
+
+  res.status(200).send(report);
+
   const responseTime = Date.now() - req.startTime;
   sendMetric('metar', responseTime);
 });

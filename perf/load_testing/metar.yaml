@@ -30,12 +30,29 @@ config:
       - 'KJFK'
       - 'LIRE'
       - 'RJTY'
-    
+      - 'KLAX'
+      - 'KNXF'
+      - 'KUKI'
+      - 'KITR'
+      - 'EFHK'
+      - 'EFTU'
+      - 'EFOU'
+      - 'EGBB'
+      - 'EGLC'
+      - 'EKYT'
+      - 'ENGM'
+      - 'EPKK'
+      - 'EPWA'
+      - 'ESMS'
+      - 'ESND'
+      - 'ESST'
+      - 'LCLK'
+
 
 scenarios:
   - name: Metar (/metar)
     flow:
       - get:
           url: '/metar'
-          qs: 
+          qs:
             station: '{{ station }}'
