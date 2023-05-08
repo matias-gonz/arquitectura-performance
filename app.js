@@ -6,6 +6,11 @@ const StatsD = require('node-statsd');
 const {createClient} = require('redis');
 const _ = require('underscore');
 
+const METAR_STATIONS = ['SAEZ', 'KJFK', 'LIRE', 'RJTY', 'KLAX', 'KNXF', 'KUKI', 'KITR', 'EFHK', 'EFTU', 'EFOU', 'EGBB', 'EGLC', 'EKYT', 'ENGM', 'EPKK', 'EPWA', 'ESMS', 'ESND', 'ESST', 'LCLK'];
+const METAR_EXPIRATION = 5;
+const SPACE_NEWS_EXPIRATION = 10;
+
+
 const app = express();
 app.use((req, res, next) => {
   req.startTime = Date.now();
@@ -48,16 +53,25 @@ app.get('/ping', (req, res) => {
 
 app.get('/space_news', async (req, res) => {
   console.log('Request received at /space_news');
+
+  const spaceNews = await redisClient.get('space-news');
+
   let titles = [];
 
-  let limit = 5;
-  const response = await axios.get('https://api.spaceflightnewsapi.net/v4/articles/?limit=' + limit);
-  const responseTimeExt = Date.now() - req.startTime;
-  sendMetric('space-news-ext', responseTimeExt);
+  if (spaceNews) {
+    titles = JSON.parse(spaceNews);
+  } else {
+    let limit = 5;
+    const response = await axios.get('https://api.spaceflightnewsapi.net/v4/articles/?limit=' + limit);
+    const responseTimeExt = Date.now() - req.startTime;
+    sendMetric('space-news-ext', responseTimeExt);
 
-  response.data.results.forEach((article) => {
-    titles.push(article.title);
-  });
+    response.data.results.forEach((article) => {
+      titles.push(article.title);
+    });
+
+    redisClient.set('space-news', JSON.stringify(titles), {EX: SPACE_NEWS_EXPIRATION});
+  }
 
   res.status(200).send(titles);
   const responseTime = Date.now() - req.startTime;
@@ -122,7 +136,6 @@ const parseMetar = (metar) => {
   return decode(data.raw_text);
 };
 
-const METAR_STATIONS = ['SAEZ', 'KJFK', 'LIRE', 'RJTY', 'KLAX', 'KNXF', 'KUKI', 'KITR', 'EFHK', 'EFTU', 'EFOU', 'EGBB', 'EGLC', 'EKYT', 'ENGM', 'EPKK', 'EPWA', 'ESMS', 'ESND', 'ESST', 'LCLK'];
 
 const populateMetar = async () => {
   const stations = _.sample(METAR_STATIONS, 5);
@@ -135,7 +148,7 @@ const populateMetar = async () => {
 
   let metars = await Promise.all(stationPromises);
   for(let i = 0; i < metars.length; i++){
-    redisClient.set('metar' + stations[i], JSON.stringify(parseMetar(metars[i].data)), {EX: 10});
+    redisClient.set('metar' + stations[i], JSON.stringify(parseMetar(metars[i].data)), {EX: METAR_EXPIRATION});
   }
 };
 
@@ -156,7 +169,7 @@ app.get('/metar', async (req, res) => {
 
     report = parseMetar(response.data);
     if (report) {
-      redisClient.set('metar' + station, JSON.stringify(report), {EX: 10});
+      redisClient.set('metar' + station, JSON.stringify(report), {EX: METAR_EXPIRATION});
     }
 
     populateMetar();
