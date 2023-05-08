@@ -91,11 +91,8 @@ const populateFacts = async (facts) => {
   }
 
   let newFacts = await Promise.all(fact_promises);
-  console.log('facts len ' + facts.length);
   newFacts = newFacts.map((fact) => fact.data.text);
-  console.log('new facts len ' + newFacts.length);
   const f = facts.concat(newFacts);
-  console.log('facts len ' + f.length);
 
   await redisClient.set('useless-facts', JSON.stringify(f));
 };
