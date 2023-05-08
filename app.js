@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
-const { XMLParser } = require('fast-xml-parser');
-const { decode } = require('metar-decoder');
+const {XMLParser} = require('fast-xml-parser');
+const {decode} = require('metar-decoder');
 const StatsD = require('node-statsd');
 const {createClient} = require('redis');
 const _ = require('underscore');
@@ -81,7 +81,7 @@ app.get('/space_news', async (req, res) => {
 
 const populateFacts = async (facts) => {
   const AMOUNT_OF_FACTS = 50;
-  if(facts.length > 2*AMOUNT_OF_FACTS){
+  if (facts.length > 10 * AMOUNT_OF_FACTS) {
     return;
   }
 
@@ -91,10 +91,13 @@ const populateFacts = async (facts) => {
   }
 
   let newFacts = await Promise.all(fact_promises);
+  console.log('facts len ' + facts.length);
   newFacts = newFacts.map((fact) => fact.data.text);
-  facts = facts.concat(newFacts);
+  console.log('new facts len ' + newFacts.length);
+  const f = facts.concat(newFacts);
+  console.log('facts len ' + f.length);
 
-  await redisClient.set('useless-facts', JSON.stringify(facts));
+  await redisClient.set('useless-facts', JSON.stringify(f));
 };
 
 app.get('/fact', async (req, res) => {
@@ -105,13 +108,13 @@ app.get('/fact', async (req, res) => {
   let fact;
   let facts = [];
   if (factsString) {
-    const facts = JSON.parse(factsString);
+    facts = JSON.parse(factsString);
     fact = facts.pop();
   } else {
     fact = await axios.get('https://uselessfacts.jsph.pl/api/v2/facts/random');
     fact = fact.data.text;
   }
-  populateFacts(facts);
+  await populateFacts(facts);
 
   const responseTimeExt = Date.now() - req.startTime;
   sendMetric('fact-ext', responseTimeExt);
@@ -129,7 +132,7 @@ const parseMetar = (metar) => {
   }
 
   let data = parsed.response.data.METAR;
-  if(parsed.response.data.METAR.length > 1){
+  if (parsed.response.data.METAR.length > 1) {
     data = parsed.response.data.METAR[0];
   }
 
@@ -147,7 +150,7 @@ const populateMetar = async () => {
   });
 
   let metars = await Promise.all(stationPromises);
-  for(let i = 0; i < metars.length; i++){
+  for (let i = 0; i < metars.length; i++) {
     redisClient.set('metar' + stations[i], JSON.stringify(parseMetar(metars[i].data)), {EX: METAR_EXPIRATION});
   }
 };
@@ -162,7 +165,7 @@ app.get('/metar', async (req, res) => {
   let report;
   if (reportString) {
     report = JSON.parse(reportString);
-  } else{
+  } else {
     const response = await axios.get(`https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&stationString=${station}&hoursBeforeNow=1`);
     const responseTimeExt = Date.now() - req.startTime;
     sendMetric('metar-ext', responseTimeExt);
