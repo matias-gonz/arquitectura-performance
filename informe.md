@@ -44,7 +44,24 @@ Este escenario, para el endpoint de _space_news_ se utilizó como Stress testing
 * **Plain:** Durante un tiempo de 60 segundos se realizan 500 requests por segundo.
 * **Ramp down:** Durante un tiempo de 30 segundos, inicialmente se realizan 500 requests por segundo disminuyendo hasta llegar a 2 requests por segundo.
 * **Stop:** Durante un tiempo de 30 segundos, se realiza una sola request por segundo.
-Este escenario, para la mayoría de casos se utilizó como Stress testing, es decir que la cantidad de carga que se envia no puede ser soportada del todo por la API.
+Este escenario, se utilizó como Stress testing para el endpoint de _Ping_, es decir que la cantidad de carga que se envia no puede ser soportada del todo por la API.
+
+### Escenario 5
+
+* **Ramp:** Durante un tiempo de 30 segundos, inicialmente se realizan 2 requests por segundo aumentando hasta llegar a 240 requests por segundo.
+* **Plain:** Durante un tiempo de 60 segundos se realizan 240 requests por segundo.
+* **Ramp down:** Durante un tiempo de 30 segundos, inicialmente se realizan 240 requests por segundo disminuyendo hasta llegar a 2 requests por segundo.
+* **Stop:** Durante un tiempo de 30 segundos, se realiza una sola request por segundo.
+Este escenario, se utilizó como Stress testing para el endpoint de _Fact_, es decir que la cantidad de carga que se envia no puede ser soportada del todo por la API.
+
+### Escenario 6
+
+* **Ramp:** Durante un tiempo de 30 segundos, inicialmente se realizan 2 requests por segundo aumentando hasta llegar a 200 requests por segundo.
+* **Plain:** Durante un tiempo de 60 segundos se realizan 200 requests por segundo.
+* **Ramp down:** Durante un tiempo de 30 segundos, inicialmente se realizan 200 requests por segundo disminuyendo hasta llegar a 2 requests por segundo.
+* **Stop:** Durante un tiempo de 30 segundos, se realiza una sola request por segundo.
+Este escenario, se utilizó como Stress testing para el endpoint de _metar_, es decir que la cantidad de carga que se envia no puede ser soportada del todo por la API.
+
 
 ## Tácticas
 
@@ -52,7 +69,20 @@ Este escenario, para la mayoría de casos se utilizó como Stress testing, es de
 
 Como primer acercamiento, tendremos la configuración básica para que el proyecto funcione con un solo nodo en nginx. El servicio se conecta a las APIs externas por cada request.
 
-* **_Gráfico de arquitectura_**
+**_Components and Connectors_**
+
+![](https://hackmd.io/_uploads/Hk_DXIOV2.png)
+
+
+**_Atributos de calidad_**
+
+**Seguridad:** Nginx beneficia la seguridad del servidor con respecto a tenerlo expuesto directamente a la red.
+* Autorización: Nginx puede funcionar como proxy y regular el acceso a los servidores.
+
+**Escalabilidad:** Al tener Nginx es relativamente fácil escalar horizontalmente efectivamente ya que se pueden agregar mas réplicas.
+
+
+**_Gráficos de los escenarios_**
 
 * **_Gráfico escenario 1 realizando request a /ping_**
 ![](https://hackmd.io/_uploads/Hy4WkCQ43.png)
@@ -105,6 +135,25 @@ Estaciones: SAEZ(Ezeiza), KJFK(New York), LIRU(Rome), RJTT(Tokyo)
 ![](https://hackmd.io/_uploads/BJ-4c0m4h.png)
 *Conclusión:* En este gráfico podemos observar notoriamente la diferencia entre el tiempo promedio de respuesta de nuestra API y el tiempo de la API externa _/metar_. Esto se debe a que nuestra API tiene un mayor procesamiento que hace el tiempo se eleve más, diferenciándose bastante del tiempo promedio de respuesta de la API externa _/metar_
 
+* **_Gráfico escenario 4 realizando request a /ping_**
+![](https://hackmd.io/_uploads/BJDFhQ_En.png)
+![](https://hackmd.io/_uploads/H1Rt3X_En.png)
+
+*Conclusión:* En este escenario se pone a prueba el consumo de CPU, ya que alcanza un 54.1% de este. Esto se va a ver reflejado en que las requests comienzar a fallar, devolviendo un `CONNECTION RESET` y `TIMEOUT`, como se observa en el gráfico superior. Una vez que se "supera", vuelve a devolver todas las requests correctamente. También, se puede observa que el tiempo de respuesta aumenta hasta un máximo de 7 segundos.
+
+
+* **_Gráfico escenario 5 realizando request a /fact_**
+![](https://hackmd.io/_uploads/HyvuVNuV2.png)
+![](https://hackmd.io/_uploads/ryetNVdE2.png)
+
+*Conclusión:* Al realizar un máximo de 240 requests por segundo, se puede observar como llega a un punto donde las requests comienzan a fallar. En cuanto al consumo de la CPU, se alcanza un máximo de consumo de 129%, y el tiempo de respuesta máximo es de 10 segundos.
+
+* **_Gráfico escenario 6 realizando request a /metar_**
+![](https://hackmd.io/_uploads/Hk5gRVdE2.png)
+![](https://hackmd.io/_uploads/rJvbREO42.png)
+
+*Conclusión:* Con un máximo de 200 requests, se puede observar como se alcanza un limite, ya que hay en total 65 requests que fallan debido a un `TIMEOUT`. Al subir esta cantidad, uno puede inferir que la cantidad de requests fallidas aumentaría en gran cantidad. El consumo máximo de CPU es de un 125%, y el tiempo de respuesta máximo es de 10s.
+
 ### Táctica 2 - Nodos replicados
 
 Como segunda táctica utilizamos 3 réplicas del servicio HTTP, donde Nginx representa un balanceador de carga. Esto significa que al realizarse distintas request, se dividen mediante las distintas réplicas, en este caso equitativamente ya que ninguna tiene un peso superior.
@@ -119,7 +168,23 @@ Para comprobar que efectivamante hay 3 réplicas, el endpoint de _Ping_ devuelve
 [18] pong!
 ```
 
-* **_Gráfico de arquitectura_**
+**_Components and Connectors_**
+
+![](https://hackmd.io/_uploads/H1ByBUdEn.png)
+
+**_Atributos de calidad_**
+
+**Fiabilidad:** Con nodos replicados evitamos un único punto de fallo: si se cae un servidor, hay otros dos que pueden seguir respondiendo.
+
+**Seguridad:**
+* Disponibilidad: Al tener nodos replicados, el sistema es mas robusto y mas fuerte a ataques DoS.
+
+**Escalabilidad:** Se mantiene igual a la táctica 1.
+
+**Performance:**  Se mantiene similar a las tácticas anteriores.
+
+
+**_Gráficos de los escenarios_**
 
 * **_Gráfico escenario 1 realizando request a /ping_**
 ![](https://i.imgur.com/Z5rVKC1.png)
@@ -170,20 +235,11 @@ _Recursos utilizados de la réplica 3_:
 ![](https://hackmd.io/_uploads/rJ6pOSE4h.png)
 (Recursos utilizados de nodo 1)
 
-*Conclusión:* En este escenario se pone a prueba el consumo de CPU, ya que entre los 3 nodos se alcanza prácticamente un 90% de este. Esto se va a ver reflejado en que las requests comienzar a fallar, devolviendo un `CONNECTION RESET` y `TIMEOUT`, como se observa en el gráfico superior. También, se puede observarque el tiempo de respuesta aumenta hasta un máximo de 10 segundos.
+*Conclusión:* En este escenario se pone a prueba el consumo de CPU, al igual que en la táctica 1, ya que entre los 3 nodos se alcanza prácticamente un 90% de este. Se puede observar como las requests comienzar a fallar. También, se puede observar que el tiempo de respuesta aumenta hasta un máximo de 10 segundos.
 
 ![](https://hackmd.io/_uploads/Sy6Nwr4E3.png)
 
 *Conclusión:* Si bien, el tiempo de respuesta del servicio alcanza los 10 segundos, se puede observar que el tiempo interno que demora la API (sin intermediarios, como nginx) no alcanza un segundo.
-
-* **_Gráfico escenario 4 realizando request a /fact_**
-![](https://hackmd.io/_uploads/rJ_sQUVEn.png)
-![](https://hackmd.io/_uploads/BkZ6X8ENn.png)
-
-*Conclusión:* 
-
-![](https://hackmd.io/_uploads/rk8fQINN3.png)
-*Conclusión:* 
 
 
 ### Táctica 3 - Rate limiting
@@ -202,7 +258,24 @@ app.use(limiter);
 
 En este ejemplo se busca limitar a un máximo de 1000 requests en un lapso de 50 segundos. A partir de entonces, las requests recibidas serán rechazadas con un status code 429 (Too Many Requests). Luego de un lapso de 30 segundos, volverá a repetir el tamaño de la ventana.
 
-* **_Gráfico de arquitectura_**
+
+**_Components and Connectors_**
+
+_Ver táctica 1_
+
+**_Atributos de calidad_**
+
+**Seguridad:**
+* Disponibilidad: Al limitar requests, se evita que el servidor se caiga por exceso de carga.
+
+**Escalabilidad:** Se mantiene igual que las tácticas 1 y 2.
+
+**Fiabilidad:** Con respecto a la táctica 2, la fiabilidad empeora ya que no hay redundancias y el servidor se convierte en un único punto de fallo.
+
+**Performance:**  Se mantiene similar a las tácticas anteriores.
+
+
+**_Gráficos de los escenarios_**
 
 * **_Gráfico escenario 1 realizando request a /ping_**
 ![](https://i.imgur.com/377mStI.png)
@@ -220,6 +293,23 @@ En este ejemplo se busca limitar a un máximo de 1000 requests en un lapso de 50
 
 En esta táctica, lo que se busca es limitar la cantidad de requests que puede recibir nuestro servicio HTTP, teniendo en cuenta que se generan 3 réplicas del servidor. A priori, como el limite se aplica a cada nodo replicado, el limite del servidor va a ser 3 veces el límite de requests.
 
+**_Components and Connectors_**
+
+_Ver táctica 2_
+
+**_Atributos de calidad_**
+
+**Seguridad:**
+* Disponibilidad: Al limitar requests, se evita que el servidor se caiga por exceso de carga.
+
+**Fiabilidad:** Con respecto a la táctica 3, la fiabilidad mejora porque se evita un único punto de falla.
+
+**Escalabilidad:** Se mantiene igual que las tácticas 1, 2 y 3.
+
+**Performance:**  Se mantiene similar a las tácticas anteriores.
+
+**_Gráficos de los escenarios_**
+
 * **_Gráfico escenario 1 realizando request a /ping con limite de 1500 requests_**
 ![](https://hackmd.io/_uploads/ry8mVbQV3.png)
 ![](https://hackmd.io/_uploads/rkk4EZm43.png)
@@ -234,9 +324,73 @@ Por lo tanto, esta táctica sirve para limitar un servidor, pero aumentando los 
 
 *Conclusión:* En este escenario, podemos observar que efectivamente, al tener un limite de 1000 requests por nodo, si se alcanza y por lo tanto si comienza a limitar las requests.
 
-### Táctica 5 - Rate limiting + Nodos replicados + Redis
+### Táctica 5 - Cache lazy population
+
+Se agrega un cache para almacenar datos de las APIs externas:
+* Space news: Si las ultimas noticias no estan en el cache, se solicita la información a la API externa y luego se almacena con tiempo de expiración 5 segundos. Es razonable que en 5 segundos las noticias no hayan cambiado de forma sustancial.
+* METAR: Mismo caso que con space news. Almacenando datos de cada estacion con tiempos de expiración independientes entre ellas.
+* Useless facts: No se puede cachear la respuesta ya que debe ser siempre una respuesta aleatorias
+
+**_Components and Connectors_**
+
+![](https://hackmd.io/_uploads/SJTm6IdNn.png)
+
+
+**_Atributos de calidad_**
+
+**Seguridad:** Nginx beneficia la seguridad del servidor con respecto a tenerlo expuesto directamente a la red.
+* Autorización: Nginx puede funcionar como proxy y regular el acceso a los servidores.
+
+**Escalabilidad:** Al tener Nginx es relativamente fácil escalar horizontalmente efectivamente ya que se pueden agregar mas réplicas.
+
+**Performance:**  La performance aumenta, al utilizar el cache los tiempos de espera disminuyen y el server puede atender mas request.
+
+
+**_Gráficos de los escenarios_**
+
+### Táctica 6 - Cache active population
+
+A la táctica anterior se le cambia la estrategia de cache:
+* METAR: Cada vez que se recibe una request y la estación no esta en el cache, se pide la 
+* Space news: Se mantiene la estrategia anterior (lazy).
+
+**_Components and Connectors_**
+
+_Ver táctica 5_.
+
+
+**_Atributos de calidad_**
+
+**Seguridad:** Nginx beneficia la seguridad del servidor con respecto a tenerlo expuesto directamente a la red.
+* Autorización: Nginx puede funcionar como proxy y regular el acceso a los servidores.
+
+**Escalabilidad:** Al tener Nginx es relativamente fácil escalar horizontalmente efectivamente ya que se pueden agregar mas réplicas.
+
+**Performance:**  La performance aumenta, al utilizar el cache los tiempos de espera disminuyen y el server puede atender mas request.
+
+
+**_Gráficos de los escenarios_**
+
+### Táctica 7 - Rate limiting + Nodos replicados + Cache (lazy)
 
 En esta táctica, la idea es que Redis funcione como un almacenamiento compartido entre las réplicas, por lo tanto el límite no se dé por réplica sino que será el mismo para todo el servidor.
+
+**_Components and Connectors_**
+
+![](https://hackmd.io/_uploads/HJu5jU_4n.png)
+
+
+**_Atributos de calidad_**
+
+**Seguridad:** Nginx beneficia la seguridad del servidor con respecto a tenerlo expuesto directamente a la red.
+* Autorización: Nginx puede funcionar como proxy y regular el acceso a los servidores.
+
+**Escalabilidad:** Al tener Nginx es relativamente fácil escalar horizontalmente efectivamente ya que se pueden agregar mas réplicas.
+
+**Performance:**  La performance aumenta, al utilizar el cache los tiempos de espera disminuyen y el server puede atender mas request.
+
+
+**_Gráficos de los escenarios_**
 
 ![](https://hackmd.io/_uploads/Sy_K07VVh.png)
 ![](https://hackmd.io/_uploads/BJ6FRQ4Eh.png)
@@ -245,13 +399,13 @@ En esta táctica, la idea es que Redis funcione como un almacenamiento compartid
 **Tácticas**
 
 - [X] Caso base
-- [ ] Cache lazy population
-- [ ] Cache active population
+- [X] Cache lazy population
+- [X] Cache active population
 - [ ] Cache lazy population - replicated repositories
 - [ ] Cache active population - replicated repositories
 - [ ] Cache lazy population - rate limiting
 - [ ] Cache active population - rate limiting
-- [ ] Cache lazy population - replicated repositories - rate limiting
+- [X] Cache lazy population - replicated repositories - rate limiting
 - [ ] Cache active population - replicated repositories - rate limiting
 - [x] Replicated repositories
 - [x] Replicate repositories - rate limiting
