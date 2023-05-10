@@ -14,13 +14,13 @@ config:
     - name: Ramp
       duration: 30
       arrivalRate: 5
-      rampTo: 300
+      rampTo: 240
     - name: Plain
       duration: 60
-      arrivalRate: 300
+      arrivalRate: 240
     - name: Ramp down
       duration: 30
-      arrivalRate: 300
+      arrivalRate: 240
       rampTo: 5
     - name: Stop
       duration: 30
