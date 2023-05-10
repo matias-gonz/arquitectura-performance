@@ -351,7 +351,8 @@ Se agrega un cache para almacenar datos de las APIs externas:
 ### Táctica 6 - Cache active population
 
 A la táctica anterior se le cambia la estrategia de cache:
-* METAR: Cada vez que se recibe una request y la estación no esta en el cache, se pide la 
+* METAR: Cada vez que se recibe una request y la estación no esta en el cache, se pide la información al servidor y además se solicita la información de otras 5 estaciones aleatorias y se almacenan en el cache con tiempo de expiracion configurable.
+* Useless facts: Se almacena una pila de facts en el cache. Por cada request recibida se extrae un fact del cache y si la cantidad de facts en la pila es menor a cierto umbral configurable, se solicitan facts al servidor externo hasta superar el umbral.
 * Space news: Se mantiene la estrategia anterior (lazy).
 
 **_Components and Connectors_**
@@ -367,7 +368,6 @@ _Ver táctica 5_.
 **Escalabilidad:** Al tener Nginx es relativamente fácil escalar horizontalmente efectivamente ya que se pueden agregar mas réplicas.
 
 **Performance:**  La performance aumenta, al utilizar el cache los tiempos de espera disminuyen y el server puede atender mas request.
-
 
 **_Gráficos de los escenarios_**
 
