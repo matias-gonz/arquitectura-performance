@@ -2,7 +2,7 @@
 
 ## Introduccion
 
-En estre trabajo práctico se comparan diferentes tácticas aplicadas a un servicio HTTP en Node.js-Express que brinda cuatro endpoints los cuales consumen tres APIs externas para dar información a sus usuarios.
+En este trabajo práctico se comparan diferentes tácticas aplicadas a un servicio HTTP en Node.js-Express que brinda cuatro endpoints, los cuales consumen tres APIs externas para dar información a sus usuarios.
 
 Las tecnologias utilizadas para implementar el servicio fueron docker, docker-compose, redis y nginx. Las estadísticas y métricas sobre la performance a lo largo del tiempo se midieron utilizando Grafana, Graphite y Artillery. Estas herramientas permiten visualizar el consumo de recursos, response time, entre otras.
 
@@ -84,12 +84,22 @@ Como primer acercamiento, tendremos la configuración básica para que el proyec
 
 **_Gráficos de los escenarios_**
 
-* **_Gráfico escenario 1 realizando request a /ping_**
-![](https://hackmd.io/_uploads/Hy4WkCQ43.png)
-![](https://hackmd.io/_uploads/S1JfkAQVn.png)
+* **_Escenario 1 realizando request a /ping_**
+
+_Gráficos obtenidos de Cadvisor_:
+![](https://hackmd.io/_uploads/ryJzCRq4n.png)
+![](https://hackmd.io/_uploads/r18G0C9Vh.png)
+![](https://hackmd.io/_uploads/SyzmC0cN2.png)
+
+*Conclusión:* Para el container de node, se puede observar que el consumo de CPU es máximo de 0.15, y el consumo de memoria total es de 150 Mb.
+
+
+_Gráficos obtenidos de Grafana_:
+![](https://hackmd.io/_uploads/BJ5pRA54h.png)
+![](https://hackmd.io/_uploads/B1NCA09E3.png)
 
 *Conclusión:* A primera vista, se puede observar la fase de *Ramp* en donde la cantidad de requests aumenta de 5 a 40 requests por segundo. Después de esa curva ascendente podemos apreciar la fase *Plain* en donde la cantidad de requests se mantiene constante y seguido podemos apreciar la fase *Ramp down* en donde vemos la caída de las requests. Por último, vemos la fase *Stop* en la que se realiza es una limpieza a las métricas. 
-Además, siendo el endpoint más simple de todos, se puede observar como el consumo de CPU llega a un máximo de 9.24% y en promedio 4.57%. De la misma manera, se observa que todas las requests fueron correctas, llegando a un máximo de 400 requests en total, y el tiempo de respuesta no supera los 42.4 ms. Este tiempo de respuesta corresponde al tiempo de todo el flujo incluyendo Nginx. 
+Además, siendo el endpoint más simple de todos, se puede observar como el consumo de CPU llega a un máximo de 10.1% y en promedio 6.07%. De la misma manera, se observa que todas las requests fueron correctas, llegando a un máximo de 400 requests en total, y el tiempo de respuesta no supera los 51.4 ms. Este tiempo de respuesta corresponde al tiempo de todo el flujo incluyendo Nginx. 
 
 ![](https://hackmd.io/_uploads/H1IsAT7N3.png)
 *Conclusión:* El gráfico anterior muestra el tiempo promedio de respuesta del servidor, en el cual se puede observar que oscila aproximadamente en 0.4ms. Está es la única métrica de tiempo de respuesta que podemos obtener ya que ping no interactúa con ninguna API externa.
@@ -114,7 +124,9 @@ A su vez, como se observará en el siguiente escenario, se debe tener en cuenta 
 
 
 ![](https://hackmd.io/_uploads/rkwmfRQN2.png)
+
 *Conclusión:* Este gráfico muestra el tiempo promedio de respuesta del servidor del escenario 3. Se puede observar que al requerir mas tiempo de procesamiento este tiempo empieza en 1000ms, el cual ya es un número elevado comparado con el resto de los escenarios, y escala hasta llegar a un tiempo promedio de respusta de aproximadamente 17.500ms. También se puede ver que se estabiliza entre 15K ms y 17,5k ms. Teniendo en cuenta que debido a la cantidad de requests acumuladas la API externa devuelve valores no soportados por nuestra API resultando en error, por eso el gráfico se corta abruptamente en vez de ir disminuyendo como en el resto de los casos. 
+
 * **_Gráfico escenario 1 realizando request a /fact_**
 ![](https://hackmd.io/_uploads/S174UAmVh.png)
 ![](https://hackmd.io/_uploads/S1lSIRQVn.png)
@@ -133,14 +145,25 @@ Estaciones: SAEZ(Ezeiza), KJFK(New York), LIRU(Rome), RJTT(Tokyo)
 *Conclusión:* De la misma manera, se puede observar que en ningún momento deja de responder con solicitudes correctas. En este caso, se puede observar un uso máximo de CPU de 31.0%, ya que requiere todo el post-procesamiento de la respuesta de _aviationweather_, pero a su vez, curiosamente el tiempo de respuesta máximo es de 236 ms, lo cual en comparación a los anteriores fue poco tiempo.
 
 ![](https://hackmd.io/_uploads/BJ-4c0m4h.png)
+
 *Conclusión:* En este gráfico podemos observar notoriamente la diferencia entre el tiempo promedio de respuesta de nuestra API y el tiempo de la API externa _/metar_. Esto se debe a que nuestra API tiene un mayor procesamiento que hace el tiempo se eleve más, diferenciándose bastante del tiempo promedio de respuesta de la API externa _/metar_
 
-* **_Gráfico escenario 4 realizando request a /ping_**
-![](https://hackmd.io/_uploads/BJDFhQ_En.png)
-![](https://hackmd.io/_uploads/H1Rt3X_En.png)
+* **_Escenario 4 realizando request a /ping_**
 
-*Conclusión:* En este escenario se pone a prueba el consumo de CPU, ya que alcanza un 54.1% de este. Esto se va a ver reflejado en que las requests comienzar a fallar, devolviendo un `CONNECTION RESET` y `TIMEOUT`, como se observa en el gráfico superior. Una vez que se "supera", vuelve a devolver todas las requests correctamente. También, se puede observa que el tiempo de respuesta aumenta hasta un máximo de 7 segundos.
+En este escenario se busca realizar un stress testing al endpoint de _Ping_
 
+_Gráficos obtenidos de Cadvisor_:
+![](https://hackmd.io/_uploads/SypYxysE2.png)
+![](https://hackmd.io/_uploads/Hy4qe1sEn.png)
+![](https://hackmd.io/_uploads/SkyslJj4n.png)
+
+*Conclusión:* Se puede observar como el container de node llega a un consumo máximo de CPU de 0.7, y el uso de memoria llega a untotal de 175 Mb. 
+
+_Gráficos obtenidos de Grafana_:
+![](https://hackmd.io/_uploads/Hkg8EWJj4h.png)
+![](https://hackmd.io/_uploads/SJ0EZksVh.png)
+
+*Conclusión:* En este escenario se pone a prueba el consumo de CPU, ya que alcanza un 58% de este. Esto se va a ver reflejado en que las requests comienzar a fallar, devolviendo un `CONNECTION RESET` y `TIMEOUT`, como se observa en el gráfico superior. También, se puede observa que el tiempo de respuesta aumenta hasta un máximo de 8.24 segundos.
 
 * **_Gráfico escenario 5 realizando request a /fact_**
 ![](https://hackmd.io/_uploads/HyvuVNuV2.png)
@@ -343,10 +366,25 @@ Se agrega un cache para almacenar datos de las APIs externas:
 
 **Escalabilidad:** Al tener Nginx es relativamente fácil escalar horizontalmente efectivamente ya que se pueden agregar mas réplicas.
 
-**Performance:**  La performance aumenta, al utilizar el cache los tiempos de espera disminuyen y el server puede atender mas request.
-
+**Performance:**  La performance aumenta, al utilizar el cache los tiempos de espera disminuyen y el server puede atender mas request. Esto se ve reflejado en los gráficos.
 
 **_Gráficos de los escenarios_**
+
+* **_Gráfico escenario 6 realizando request a /metar_**
+![](https://hackmd.io/_uploads/HkGyZdYNn.png)
+![](https://hackmd.io/_uploads/HJ2yWOKNh.png)
+
+*Conclusión:* Comparando los resultados contra la táctica 1:
+* Esta vez no hay timeouts y el server es capaz de responder todas las requests. El response time maximo no supera el segundo y en el caso anterior superaba los 10.
+* El uso del CPU fue menor, llegando a 40% comparado con el 125% del caso base.
+
+Todo esto refleja el aumento en performance.
+
+* **_Gráfico escenario 3 realizando request a /space_news_**
+![](https://hackmd.io/_uploads/SJHQEOKNh.png)
+![](https://hackmd.io/_uploads/SygV4OK4n.png)
+
+*Conclusión:* Al igual que para /metar, tanto el response time y el consumo de recursos disminuyó. Esta vez no se generan timeouts y el tiempo de respuesta maximo no supera los 3 segundos.
 
 ### Táctica 6 - Cache active population
 
@@ -359,7 +397,6 @@ A la táctica anterior se le cambia la estrategia de cache:
 
 _Ver táctica 5_.
 
-
 **_Atributos de calidad_**
 
 **Seguridad:** Nginx beneficia la seguridad del servidor con respecto a tenerlo expuesto directamente a la red.
@@ -367,9 +404,25 @@ _Ver táctica 5_.
 
 **Escalabilidad:** Al tener Nginx es relativamente fácil escalar horizontalmente efectivamente ya que se pueden agregar mas réplicas.
 
-**Performance:**  La performance aumenta, al utilizar el cache los tiempos de espera disminuyen y el server puede atender mas request.
+**Performance:**  La performance varía respecto al escenario: para /fact aumenta pero para /metar disminuye, esto se analiza en las conclusiones de los gráficos.
 
 **_Gráficos de los escenarios_**
+
+* **_Gráfico escenario 5 realizando request a /fact_**
+![](https://hackmd.io/_uploads/SJNZq_K42.png)
+![](https://hackmd.io/_uploads/rkT-qOY4h.png)
+
+*Conclusión:* Comparado con el caso base, la táctica de cache con active population resulta sumamente efectiva. Con la misma carga que termino en timeouts para el caso base, en esta táctica se responden todas las request con un response máximo de 90ms. Es interesante como se observa el pico al comienzo del escenario ya que es ahi donde se empieza a popular el cache, pero luego disminuye drásticamente y los tiempos de respuesta caen a los 25 ms.
+
+* **_Gráfico escenario 6 realizando request a /metar_**
+![](https://hackmd.io/_uploads/r1He2utEn.png)
+![](https://hackmd.io/_uploads/rJl4bhOtE2.png)
+
+*Conclusión:* Comparando con cache lazy population, la implementación de active population no fue efectiva. Se ve que la performance bajo y el uso del cpu aumento. Se identifican dos posibles causas:
+* La implementación de cache active population no es eficiente en terminos algoritmicos.
+* Hay muy pocas estaciones y entonces el cache con lazy population alcanza a cachearlas todas al mismo tiempo que active population pero con menos esfuerzo.
+
+Creemos que esta táctica resultaría mas efectiva con más estaciones.
 
 ### Táctica 7 - Rate limiting + Nodos replicados + Cache (lazy)
 
@@ -394,24 +447,5 @@ En esta táctica, la idea es que Redis funcione como un almacenamiento compartid
 
 ![](https://hackmd.io/_uploads/Sy_K07VVh.png)
 ![](https://hackmd.io/_uploads/BJ6FRQ4Eh.png)
+
 *Conclusión:* En este escenario, utilizando un límite de 1500 requests por cada 50s, podemos ver que éste se comparte entre los tres nodos por lo que se empiezan a limitar las requests mucho antes. Acá podemos ver una notoria diferencia con la táctica anterior, cuyo límite era de 1500 requests en cada réplica y nunca se llegaba a limitar ninguna.
-
-**Tácticas**
-
-- [X] Caso base
-- [X] Cache lazy population
-- [X] Cache active population
-- [ ] Cache lazy population - replicated repositories
-- [ ] Cache active population - replicated repositories
-- [ ] Cache lazy population - rate limiting
-- [ ] Cache active population - rate limiting
-- [X] Cache lazy population - replicated repositories - rate limiting
-- [ ] Cache active population - replicated repositories - rate limiting
-- [x] Replicated repositories
-- [x] Replicate repositories - rate limiting
-- [x] Rate limiting
-
-
-**Escenarios**
-- [x] Carga con distintos aeropuertos
-
