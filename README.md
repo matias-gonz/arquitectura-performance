@@ -64,6 +64,10 @@ Este escenario, se utilizó como Stress testing para el endpoint de _metar_, es 
 
 ## Tácticas
 
+En el repositorio, cada táctica se encuentra en una rama a parte, para poder realizar el cambio de táctica sin tener que modificar el código.
+
+Cada ráma tiene la siguiente nomenclatura: `tactica_n-descripcion`.
+
 ### Táctica 1 - Caso Base
 
 Como primer acercamiento, tendremos la configuración básica para que el proyecto funcione con un solo nodo en nginx. El servicio se conecta a las APIs externas por cada request.
